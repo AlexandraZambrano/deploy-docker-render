@@ -26,19 +26,37 @@ cd deploy-docker-render
 
 ## Paso 2. Crea el Dockerfile
 
-Crea un archivo llamado `Dockerfile` (sin extensión) en la raíz. Tiene que:
+Crea un archivo llamado `Dockerfile` (sin extensión) en la raíz del proyecto y pega esto:
 
-1. Partir de la imagen `python:3.11-slim`
-2. Usar `/app` como directorio de trabajo
-3. Copiar `requirements.txt` e instalar las dependencias con `pip install --no-cache-dir -r requirements.txt`
-4. Copiar `app.py`
-5. Arrancar con: `streamlit run app.py --server.address=0.0.0.0 --server.port=$PORT --server.headless=true`
+```dockerfile
+# Imagen base de Python
+FROM python:3.11-slim
 
-Dos pistas importantes:
+# Directorio de trabajo dentro del contenedor
+WORKDIR /app
 
-- Render le dice a tu app en qué puerto escuchar con la variable de entorno `$PORT`. Si el puerto está fijo en el código, el deploy falla con *No open ports detected*.
-- Para que `$PORT` se expanda, el `CMD` debe ir en **forma shell** (texto normal, sin corchetes).
-- Para probar en local, define un valor por defecto en el Dockerfile con `ENV PORT=8501`.
+# Copiamos primero las dependencias (así Docker cachea esta capa)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiamos el código de la app
+COPY app.py .
+
+# Render inyecta $PORT (10000 por defecto). En local usamos 8501
+ENV PORT=8501
+EXPOSE 8501
+
+# Forma shell (sin corchetes) para que se expanda $PORT
+CMD streamlit run app.py --server.address=0.0.0.0 --server.port=$PORT --server.headless=true
+```
+
+Qué hace cada parte:
+
+- `FROM`: imagen base con Python ya instalado.
+- `WORKDIR`: carpeta donde vivirá la app dentro del contenedor.
+- `COPY` + `RUN pip install`: copia e instala las dependencias.
+- `ENV PORT=8501`: valor por defecto para local. En Render se sobrescribe con el puerto que ellos asignan.
+- `CMD`: comando que arranca la app. Escucha en `0.0.0.0` (para ser accesible desde fuera del contenedor) y en el puerto `$PORT`. Si el puerto estuviera fijo, el deploy fallaría con *No open ports detected*.
 
 ## Paso 3. Pruébalo en local
 
@@ -67,6 +85,23 @@ git push
 6. Pulsa **Deploy Web Service** y espera unos minutos.
 
 Cuando termine tendrás una URL tipo `https://hello-docker-xxxx.onrender.com`.
+
+## Opcional. Automatiza el deploy con render.yaml
+
+En vez de rellenar el formulario a mano (paso 5), puedes describir el servicio en un archivo y Render lo lee. Se llama **Blueprint**.
+
+Crea `render.yaml` en la raíz y pega esto:
+
+```yaml
+services:
+  - type: web                        # servicio web con URL pública
+    name: hello-docker               # nombre del servicio (sale en la URL)
+    runtime: docker                  # construye la imagen con tu Dockerfile
+    plan: free                       # plan gratuito
+    healthCheckPath: /_stcore/health # ruta que Render consulta para saber si la app está viva
+```
+
+Haz commit y push, y en Render pulsa **New +** y luego **Blueprint**, elige tu repo y **Apply**. Render crea el servicio con esos mismos ajustes.
 
 ## Notas
 
