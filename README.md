@@ -24,6 +24,9 @@ git clone https://github.com/<tu-usuario>/deploy-docker-render.git
 cd deploy-docker-render
 ```
 
+- `git clone <url>`: descarga una copia del repo en tu ordenador.
+- `cd deploy-docker-render`: entra en la carpeta que se acaba de crear.
+
 ## Paso 2. Crea el Dockerfile
 
 Crea un archivo llamado `Dockerfile` (sin extensión) en la raíz del proyecto y pega esto:
@@ -65,7 +68,17 @@ docker build -t hello-docker .
 docker run --rm -p 8501:8501 hello-docker
 ```
 
-Abre http://localhost:8501. Si ves la app, ya casi has terminado.
+Qué hace cada comando:
+
+- `docker build`: construye una **imagen** (la "plantilla" de tu app, con Python, las dependencias y tu código) siguiendo las instrucciones del `Dockerfile`.
+  - `-t hello-docker`: `-t` (*tag*) le pone nombre a la imagen para poder usarla después.
+  - `.`: el punto significa "busca el `Dockerfile` en esta carpeta".
+- `docker run`: crea y arranca un **contenedor**, que es una instancia en ejecución de la imagen.
+  - `--rm`: borra el contenedor automáticamente cuando lo pares (Ctrl+C). Sin esta opción, cada vez que ejecutas la app queda un contenedor parado ocupando espacio y tendrías que borrarlo a mano con `docker rm`.
+  - `-p 8501:8501`: conecta puertos con el formato `puerto-de-tu-ordenador:puerto-del-contenedor`. Así lo que la app sirve en el 8501 dentro del contenedor lo ves tú en `localhost:8501`.
+  - `hello-docker`: el nombre de la imagen que construiste antes.
+
+Abre http://localhost:8501. Si ves la app, ya casi has terminado. Para pararla, vuelve a la terminal y pulsa Ctrl+C.
 
 ## Paso 4. Sube los cambios
 
@@ -74,6 +87,10 @@ git add Dockerfile
 git commit -m "Añade Dockerfile"
 git push
 ```
+
+- `git add Dockerfile`: marca el archivo para incluirlo en el próximo commit.
+- `git commit -m "..."`: guarda una "foto" de los cambios en tu historial local; `-m` es el mensaje que lo describe.
+- `git push`: envía tus commits a GitHub. Render lo verá desde allí.
 
 ## Paso 5. Despliega en Render
 
