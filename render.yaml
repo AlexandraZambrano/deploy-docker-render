@@ -1,6 +1,0 @@
-services:
-  - type: web
-    name: hello-docker
-    runtime: docker
-    plan: free
-    healthCheckPath: /_stcore/health
