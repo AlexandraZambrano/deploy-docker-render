@@ -15,17 +15,43 @@ No hace falta Docker Hub: Render construye la imagen por ti desde tu repositorio
 - Cuenta de GitHub
 - Cuenta gratuita en [render.com](https://render.com) (puedes entrar con GitHub)
 
-## Paso 1. Haz tu copia del repo
+## Paso 1. Crea tu propio repositorio
 
-Pulsa **Fork** (o **Use this template**) para tener el repo en tu cuenta de GitHub y clónalo:
+Este repo es de solo lectura para ti: puedes descargarlo, pero no hacer `push` en él. Render necesita un repo **tuyo** en GitHub, así que vas a descargar este código y subirlo a un repo nuevo.
+
+**1.1. Descarga este repo en tu ordenador**
 
 ```bash
-git clone https://github.com/<tu-usuario>/deploy-docker-render.git
+git clone https://github.com/Factoria-F5-madrid/deploy-docker-render.git
 cd deploy-docker-render
 ```
 
 - `git clone <url>`: descarga una copia del repo en tu ordenador.
 - `cd deploy-docker-render`: entra en la carpeta que se acaba de crear.
+
+**1.2. Crea un repo vacío en tu cuenta de GitHub**
+
+1. Entra en https://github.com/new
+2. En *Repository name* pon, por ejemplo, `deploy-docker-render`.
+3. Déjalo en **Public**.
+4. **No marques** *Add a README*, *.gitignore* ni *license*. Tiene que estar vacío, porque ya vas a subir tus archivos.
+5. Pulsa **Create repository**. GitHub te muestra la URL de tu repo, algo como `https://github.com/<tu-usuario>/deploy-docker-render.git`. Cópiala.
+
+**1.3. Conecta tu carpeta con tu repo y sube el código**
+
+```bash
+git remote set-url origin https://github.com/<tu-usuario>/deploy-docker-render.git
+git remote -v
+git push -u origin main
+```
+
+- `git remote set-url origin <url>`: un *remote* es la dirección de un repo en internet, y `origin` es el nombre del principal. Ahora mismo `origin` apunta al repo de Factoría, y con este comando lo cambias para que apunte al tuyo.
+- `git remote -v`: lista los remotes para que compruebes que `origin` muestra **tu** URL y no la de Factoría.
+- `git push -u origin main`: sube la rama `main` a tu repo. `-u` recuerda esa conexión, así que desde ahora basta con escribir `git push`.
+
+La primera vez, Git te pedirá autenticarte con tu cuenta de GitHub. Si usas HTTPS, la contraseña de la cuenta no vale, hace falta un *token*. Lo más fácil es instalar la CLI de GitHub y ejecutar `gh auth login`.
+
+Recarga la página de tu repo en GitHub: deberías ver `app.py`, `requirements.txt` y `README.md`.
 
 ## Paso 2. Crea el Dockerfile
 
@@ -59,7 +85,8 @@ Qué hace cada parte:
 - `WORKDIR`: carpeta donde vivirá la app dentro del contenedor.
 - `COPY` + `RUN pip install`: copia e instala las dependencias.
 - `ENV PORT=8501`: valor por defecto para local. En Render se sobrescribe con el puerto que ellos asignan.
-- `CMD`: comando que arranca la app. Escucha en `0.0.0.0` (para ser accesible desde fuera del contenedor) y en el puerto `$PORT`. Si el puerto estuviera fijo, el deploy fallaría con *No open ports detected*.
+- `$PORT`: es una variable. Antes de ejecutar el comando, la shell la sustituye por su valor (a eso se le llama *expandir*): con `PORT=10000` el comando acaba siendo `--server.port=10000`. Por eso el mismo Dockerfile vale en local (usa 8501) y en Render (usa el que le asigna Render).
+- `CMD`: comando que arranca la app. Escucha en `0.0.0.0` (para ser accesible desde fuera del contenedor) y en el puerto `$PORT`. Render decide el puerto (no lo eliges tú) y lo comunica con la variable `$PORT`. Si dejas un puerto fijo, a veces Render lo detecta y a veces falla con *No open ports detected*, así que usa siempre `$PORT`.
 
 ## Paso 3. Pruébalo en local
 
@@ -90,7 +117,7 @@ git push
 
 - `git add Dockerfile`: marca el archivo para incluirlo en el próximo commit.
 - `git commit -m "..."`: guarda una "foto" de los cambios en tu historial local; `-m` es el mensaje que lo describe.
-- `git push`: envía tus commits a GitHub. Render lo verá desde allí.
+- `git push`: envía tus commits a **tu** repo en GitHub (el que conectaste en el paso 1). Render lo leerá desde allí.
 
 ## Paso 5. Despliega en Render
 
@@ -124,7 +151,7 @@ Haz commit y push, y en Render pulsa **New +** y luego **Blueprint**, elige tu r
 
 - En el plan free el servicio se duerme tras 15 minutos sin tráfico y el primer acceso tarda cerca de un minuto.
 - El disco es efímero: los nombres que guarda la app en `data/nombres.txt` se borran en cada redeploy o reinicio.
-- Cada `git push` a `main` vuelve a desplegar la app automáticamente.
+- Cada `git push` a `main` de tu repo vuelve a desplegar la app automáticamente.
 
 ## ¿Atascado?
 
